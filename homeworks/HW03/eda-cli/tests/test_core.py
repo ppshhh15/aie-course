@@ -59,3 +59,31 @@ def test_correlation_and_top_categories():
     city_table = top_cats["city"]
     assert "value" in city_table.columns
     assert len(city_table) <= 2
+
+
+def test_compute_quality_flags_new_heuristics():
+    """Тестирует новые эвристики: has_constant_columns, has_high_cardinality_categoricals, has_suspicious_id_duplicates."""
+    df = pd.DataFrame({
+        "const_col": [42, 42, 42, 42],                   # константная колонка
+        "high_card_cat": ["A", "B", "C", "D"],           # 4 уникальных из 4 - 100% кардинальность
+        "user_id": [1, 2, 2, 4],                         # дубликат в колонке с 'id'
+        "normal_num": [1.0, 2.0, 3.0, 4.0],
+    })
+
+    summary = summarize_dataset(df)
+    missing_df = missing_table(df)
+    flags = compute_quality_flags(summary, missing_df)
+
+    # Проверка новых флагов
+    assert flags["has_constant_columns"] is True
+    assert flags["has_high_cardinality_categoricals"] is True
+    assert flags["has_suspicious_id_duplicates"] is True
+
+    # Проверка на отсутствие дубликатов (негативный случай)
+    df_clean = df.copy()
+    df_clean["user_id"] = [1, 2, 3, 4]  # убираем дубликат
+    summary_clean = summarize_dataset(df_clean)
+    missing_df_clean = missing_table(df_clean)
+    flags_clean = compute_quality_flags(summary_clean, missing_df_clean)
+
+    assert flags_clean["has_suspicious_id_duplicates"] is False
