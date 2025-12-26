@@ -247,6 +247,52 @@ curl -X POST "http://127.0.0.1:8000/quality-from-csv" \
 
 ---
 
+### 5. `POST /quality-flags-from-csv` – полный набор флагов качества
+Эндпоинт принимает CSV-файл и возвращает все вычисленные флаги качества данных, включая как булевы индикаторы, так и детальную информацию о проблемных колонках.
+
+Внутри:
+
+- читает CSV-файл в `pandas.DataFrame`;
+- вызывает функции из `eda_cli.core`:
+
+  - `summarize_dataset`,
+  - `missing_table`,
+  - `compute_quality_flags`;
+- возвращает полный словарь флагов, включая списки колонок и числовые метрики.
+
+**Запрос:**
+
+```http
+POST /quality-flags-from-csv
+Content-Type: multipart/form-data
+file: <CSV-файл>
+```
+
+Через Swagger:
+
+- в `/docs` открыть `POST /quality-flags-from-csv`,
+- нажать `Try it out`,
+- выбрать файл (например, `data/example.csv`),
+- нажать `Execute`.
+
+**Пример вызова через `curl` (Linux/macOS/WSL):**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/quality-flags-from-csv" \
+  -F "file=@data/example.csv"
+```
+
+Ответ будет содержать:
+
+- `flags` -полный набор флагов качества, включая:
+
+  - булевы флаги (too_few_rows, has_constant_columns, has_many_zero_values и др.),
+  - списки имён колонок (constant_columns, zero_heavy_columns),
+  - числовые метрики (quality_score, max_missing_share);
+- `latency_ms` - время обработки запроса.
+
+---
+
 ## Структура проекта (упрощённо)
 
 ```text
@@ -281,4 +327,4 @@ uv run pytest -q
 
 1. Запустить тесты `pytest`;
 2. Проверить работу CLI (`uv run eda-cli ...`);
-3. Проверить работу HTTP-сервиса (`uv run uvicorn ...`, затем `/health` и `/quality`/`/quality-from-csv` через `/docs` или HTTP-клиент).
+3. Проверить работу HTTP-сервиса (`uv run uvicorn ...`, затем `/health` и `/quality`/`/quality-from-csv`/`/quality-flags-from-csv` через `/docs` или HTTP-клиент).
