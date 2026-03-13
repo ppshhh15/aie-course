@@ -32,6 +32,9 @@ eggs/
 *.egg-info/
 .installed.cfg
 
+# Домашки: игнорим данные
+homeworks/*/data/
+
 # Кеши и артефакты тестов
 .pytest_cache/
 .coverage
