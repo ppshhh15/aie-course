@@ -58,3 +58,6 @@ logs/
 *.tmp
 *.bak
 *.old
+
+# Полный датасет на 500+ тыс. строк
+project/data/raw
