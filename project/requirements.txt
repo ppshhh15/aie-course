@@ -6,3 +6,4 @@ scikit-learn>=1.2.0
 catboost>=1.2
 pytest>=7.0.0
 httpx>=0.24.0
+PyYAML>=6.0

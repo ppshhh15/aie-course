@@ -1,0 +1,19 @@
+# Пути к данным и сохраненной модели
+paths:
+  raw_data_path: "data/raw/car_prices.csv"
+  sample_data_path: "data/sample_car_prices.csv"
+  model_save_path: "artifacts/catboost_model.cbm"
+
+# Параметры обучения модели CatBoost
+train_params:
+  rows_to_read: 100000
+  iterations: 500
+  learning_rate: 0.1
+  test_size: 0.2
+  random_state: 42
+
+# Настройки для API-сервиса FastAPI
+api:
+  title: "Used Car Price Predictor API"
+  description: "API для оценки стоимости подержанных автомобилей на основе CatBoost"
+  version: "1.0.0"

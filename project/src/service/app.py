@@ -1,6 +1,7 @@
 import os
 import logging
 from contextlib import asynccontextmanager
+import yaml
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -8,38 +9,41 @@ from catboost import CatBoostRegressor
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-MODEL_PATH = 'artifacts/catboost_model.cbm'
+# Загружаем конфигурацию
+with open("configs/config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
-# 1. Описываем Lifespan
+MODEL_PATH = config["paths"]["model_save_path"]
+API_TITLE = config["api"]["title"]
+API_DESC = config["api"]["description"]
+API_VERSION = config["api"]["version"]
+
+# Управляем жизненным циклом приложения
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Код здесь выполняется ПРИ СТАРТЕ приложения
     if not os.path.exists(MODEL_PATH):
         logging.error(f"Файл модели {MODEL_PATH} не найден! Сначала запустите обучение.")
         raise FileNotFoundError("Модель не найдена.")
     
-    logging.info("Загрузка модели CatBoost через Lifespan...")
-    # Сохраняем модель в state приложения (это стандарт FastAPI)
+    logging.info(f"Загрузка модели CatBoost из {MODEL_PATH}...")
     app.state.model = CatBoostRegressor()
     app.state.model.load_model(MODEL_PATH)
-    logging.info("Модель успешно загружена и готова к работе.")
+    logging.info("Модель успешно загружена.")
     
-    yield # В этой точке приложение начинает принимать запросы
+    yield # Сервис начинает принимать запросы
     
-    # Код здесь выполняется ПРИ ОСТАНОВКЕ приложения
     logging.info("Остановка приложения, освобождение ресурсов...")
     app.state.model = None
 
 
-# 2. Инициализируем FastAPI и передаем ему наш lifespan handler
+# Инициализируем FastAPI с параметрами из конфига
 app = FastAPI(
-    title="Used Car Price Predictor API",
-    description="API для оценки стоимости подержанных автомобилей на основе CatBoost",
-    version="1.0.0",
+    title=API_TITLE,
+    description=API_DESC,
+    version=API_VERSION,
     lifespan=lifespan
 )
 
-# Описываем входные данные по стандарту Pydantic v2
 class CarInput(BaseModel):
     year: int = Field(2015, description="Год выпуска", examples=[2015])
     make: str = Field("Ford", description="Производитель", examples=["Ford"])
@@ -57,19 +61,16 @@ class CarInput(BaseModel):
 def read_root():
     return {
         "status": "healthy",
-        "message": "Used Car Price Predictor API is running. Go to /docs for Swagger UI."
+        "message": f"{API_TITLE} is running. Go to /docs for Swagger UI."
     }
 
 @app.post("/predict")
 def predict_price(car: CarInput):
-    # Достаем модель из state приложения
     if not hasattr(app.state, "model") or app.state.model is None:
         raise HTTPException(status_code=503, detail="Модель не загружена на сервере.")
     
     try:
         input_data = pd.DataFrame([car.model_dump()])
-        
-        # Делаем предсказание через сохраненную в state модель
         predicted_value = app.state.model.predict(input_data)[0]
         
         return {
