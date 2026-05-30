@@ -39,19 +39,19 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Описываем входные данные
+# Описываем входные данные по стандарту Pydantic v2
 class CarInput(BaseModel):
-    year: int = Field(2015, description="Год выпуска", example=2015)
-    make: str = Field("Ford", description="Производитель", example="Ford")
-    model: str = Field("Fusion", description="Модель", example="Fusion")
-    trim: str = Field("SE", description="Комплектация", example="SE")
-    body: str = Field("Sedan", description="Тип кузова", example="Sedan")
-    transmission: str = Field("automatic", description="Коробка передач", example="automatic")
-    state: str = Field("ca", description="Штат регистрации", example="ca")
-    condition: float = Field(4.5, description="Состояние машины (от 1 до 5)", example=4.5)
-    odometer: float = Field(60000.0, description="Пробег (в милях)", example=60000.0)
-    color: str = Field("black", description="Цвет кузова", example="black")
-    interior: str = Field("black", description="Цвет салона", example="black")
+    year: int = Field(2015, description="Год выпуска", examples=[2015])
+    make: str = Field("Ford", description="Производитель", examples=["Ford"])
+    model: str = Field("Fusion", description="Модель", examples=["Fusion"])
+    trim: str = Field("SE", description="Комплектация", examples=["SE"])
+    body: str = Field("Sedan", description="Тип кузова", examples=["Sedan"])
+    transmission: str = Field("automatic", description="Коробка передач", examples=["automatic"])
+    state: str = Field("ca", description="Штат регистрации", examples=["ca"])
+    condition: float = Field(4.5, description="Состояние машины (от 1 до 5)", examples=[4.5])
+    odometer: float = Field(60000.0, description="Пробег (в милях)", examples=[60000.0])
+    color: str = Field("black", description="Цвет кузова", examples=["black"])
+    interior: str = Field("black", description="Цвет салона", examples=["black"])
 
 @app.get("/")
 def read_root():
@@ -67,7 +67,7 @@ def predict_price(car: CarInput):
         raise HTTPException(status_code=503, detail="Модель не загружена на сервере.")
     
     try:
-        input_data = pd.DataFrame([car.dict()])
+        input_data = pd.DataFrame([car.model_dump()])
         
         # Делаем предсказание через сохраненную в state модель
         predicted_value = app.state.model.predict(input_data)[0]
